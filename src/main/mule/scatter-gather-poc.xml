@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0f18ae15-2c17-43ff-b869-318cbb57999d" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="5e587265-b4f5-49da-816f-322ebbc686e6" />
+	<http:listener-config name="HTTP_Listener_config2" doc:name="HTTP Listener config" doc:id="386a99a1-df3e-4522-937f-528727679350" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="17fd7f58-e242-44bf-bf72-5fdd0b1cbe7a" >
+		<http:request-connection host="localhost" port="8082" />
+	</http:request-config>
+	<flow name="scatter-gather-pocFlow" doc:id="723d8fb3-ed22-4c75-bb98-55ac8d76cd96" >
+		<http:listener doc:name="Listener" doc:id="6b9c7f4e-15b7-4629-b3fd-7050204aed9e" config-ref="HTTP_Listener_config" path="/scatter-gather-poc"/>
+		<logger level="INFO" doc:name="Logger" doc:id="402d251e-59dc-4470-9183-f5a60cffbc33" message="Payload received from Request : #[payload]"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="110f2776-2f07-4a4b-bcc0-d518bf1fc6eb" >
+			<route >
+				<logger level="INFO" doc:name="Logger" doc:id="fa3061e7-11fc-476d-a1d4-bbff31b817e8" message="Payload is first path : #[payload]"/>
+				<file:write doc:name="Write" doc:id="af0619ff-20e2-4c23-9290-45cecd297b11" config-ref="File_Config" path="D:\Work\Data\Scatter_Gather_POC\scatter-gather-poc-output.txt.txt"/>
+			</route>
+			<route >
+				<logger level="INFO" doc:name="Logger" doc:id="1859989e-695e-4712-967a-8900243ebe0e" message="Payload is second path : #[payload]"/>
+				<ee:transform doc:name="Transform Message" doc:id="c4385b64-7d6b-44b9-ba21-b275f1434fe1" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+			<route >
+				<logger level="INFO" doc:name="Logger" doc:id="2142383c-710c-46ac-9c84-9da9ba4dc3cb" message="Payload is third path : #[payload]"/>
+				<http:request method="GET" doc:name="Request" doc:id="aa5e2994-c762-4e61-9305-c54c85093a0f" config-ref="HTTP_Request_configuration" path="/secondflow-fail-condition"/>
+			</route>
+		</scatter-gather>
+		<logger level="INFO" doc:name="Logger" doc:id="16d6d59f-5aa4-46f0-bd06-bc1d4f3cd193" message="After scatter gather payload is : #[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="a8d788eb-f7ce-449b-8b1c-3d23e0ba8760" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json		
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="611107ba-328c-4c4c-b174-3b8f80ff2cd6" message="Final Response : #[payload]"/>
+	</flow>
+	<flow name="scatter-gather-pocFlow1" doc:id="57570f44-5168-48da-9a1c-eb31dfa8e9a1" >
+		<http:listener doc:name="Listener" doc:id="e97b305c-8d54-44c3-a18e-d924c759fcd8" config-ref="HTTP_Listener_config2" path="/secondflow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="8e4c7956-060c-4e4c-9579-36651b68e4ba" message="Inside : Second flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="6356d50d-a569-45e3-8659-8232ea104443" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "Inside 2nd Flow for 3rd route"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
